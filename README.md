@@ -88,15 +88,15 @@ var cache = new cache.get({
     loggedOut: function(params) {
       return !params.token;
     },
-    defaultCacheConfig: {
-      cache: {
-        max: 50, //50 items
-        length: function(n) { return n.length }, //how length is determined
-        dispose: function(key, n) { n.close() }, // optoinal handling on disposal
-        maxAge: 1000 * 60 * 5, // 5 minutes
-      },
-      rules: [ loggedOut ]
-    }
+  },
+  defaultCacheConfig: {
+    cache: {
+      max: 50, //50 items
+      length: function(n) { return n.length }, //how length is determined
+      dispose: function(key, n) { n.close() }, // optoinal handling on disposal
+      maxAge: 1000 * 60 * 5, // 5 minutes
+    },
+    rules: [ loggedOut ]
   },
   dataTypes:
     listings: {
