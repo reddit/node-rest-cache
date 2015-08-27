@@ -1,1 +1,4 @@
-console.log('caaaaache');
+function Cache(config) {
+}
+
+module.exports = Cache;

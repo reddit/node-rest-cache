@@ -1,6 +1,6 @@
 # restcache
-An LRU-based caching solution for rest-like data fetching. Reduces the number
-of API calls you have to make.
+A caching solution for data fetching. Reduces the number of API calls you have
+to make.
 
 ## What it is
 
@@ -29,7 +29,8 @@ The primary function, `cache.get`, takes a series of arguments:
   will be used. Provided config will *not* be merged with the default.
 * Optionally, a response value formatting function to be returned pre-cache.
   This should return a flat object such as `{ datatype: data }` so that the
-  cache can put data into the proper place.
+  cache can put data into the proper place. (This also means you can work with
+  multiple data types at once.)
 
 The cache will generate a key based on a SHA of the JSON.stringified parameters.
 It will then look up a list of IDs returned for that key+sha. If it does not

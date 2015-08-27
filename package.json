@@ -20,5 +20,11 @@
   "bugs": {
     "url": "https://github.com/ajacksified/restcache/issues"
   },
-  "homepage": "https://github.com/ajacksified/restcache#readme"
+  "homepage": "https://github.com/ajacksified/restcache#readme",
+  "devDependencies": {
+    "chai": "^3.2.0",
+    "mocha": "^2.2.5",
+    "sinon": "^1.16.1",
+    "sinon-chai": "^2.8.0"
+  }
 }
