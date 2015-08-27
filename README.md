@@ -14,9 +14,12 @@ The intent is that you can now run `api.listings.get({ id: 1 })`, and if the
 previous query had already populated a `listing` with id `1`, you get an
 immediate response rather than making another server round-trip.
 
+You can also reset specific instances of objects in the cache, for example, on
+the event of a `patch` that edits an object.
+
 ## How it works
 
-The primary function, `cache`, takes a series of arguments:
+The primary function, `cache.get`, takes a series of arguments:
 
 * A key by which to look up things in the cache. This can be ommitted if your
   function has a unique `name` (`function.name`)
@@ -46,6 +49,18 @@ If the data is in the cache, it will:
   they will be `Promise.resolve`d immediately. If not, the above process will
   be run, as we will assume the cache is stale.
 
+
+Another function, `cache.reset`, allows you to reset a single object, a list of
+objects, or to reset a cache entirely for a given data type. It takes the
+arguments:
+
+* Data type name
+* Object or array to update
+
+It will attempt to match the object (or, each object in the array), and replace
+the objects in the cache with the supplied data. Or, if none was passed in, the
+cache will be cleared for that data type.
+
 ## A Sample
 
 ```javascript
@@ -53,7 +68,7 @@ function loggedOut (params) {
   return !params.token;
 }
 
-var cache = new Cache({
+var cache = new cache.get({
   rules: {
     loggedOut: function(params) {
       return !params.token;
@@ -75,7 +90,7 @@ var cache = new Cache({
   }
 });
 
-function responseFormat(data) {
+function formatListings(data) {
   return {
     listings: listings
   };
@@ -84,7 +99,7 @@ function responseFormat(data) {
 var apiParameters = { subreddit: 'funny' };
 
 // Use `api.listings.get.name` as the key, and use the default config.
-var listings = cache(api.listings.get, [apiParams], formatRes);
+var listings = cache.get(api.listings.get, [apiParams], formatListings);
 
 listings.then(
   function(data) { /*...*/ },
@@ -98,12 +113,26 @@ listings.then(
 var editConfig = {/*...*/};
 var apiParameters = { _id: 1 };
 var key = 'edit-listing-cache';
-var listing = cache(key, api.listings.get, [apiParams], formatRes, editConfig);
+var listing = cache.get(
+                key,
+                api.listings.get,
+                [apiParams],
+                formatListings,
+                editConfig
+              );
 
 listing.then(
   function(data) { /*...*/ },
   function(error) { /*...*/ }
 );
+
+// Reset an object in the cache that was updated
+api.listings.patch(params).then(function(res) {
+  cache.reset('listings', res.listing);
+});
+
+// Obliterate the cache
+cache.reset('listings');
 ```
 
 ## Other Notes for Your Careful Consideration
