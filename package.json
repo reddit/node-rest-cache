@@ -1,0 +1,24 @@
+{
+  "name": "restcache",
+  "version": "0.0.0",
+  "description": "An LRU-based caching solution for rest-like data fetching",
+  "main": "index.js",
+  "scripts": {
+    "test": "./node_modules/mocha/bin/mocha --recursive ./test/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ajacksified/restcache.git"
+  },
+  "keywords": [
+    "cache",
+    "api",
+    "rest"
+  ],
+  "author": "Jack Lawson <ajacksified@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ajacksified/restcache/issues"
+  },
+  "homepage": "https://github.com/ajacksified/restcache#readme"
+}
