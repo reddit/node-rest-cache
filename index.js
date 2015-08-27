@@ -27,7 +27,7 @@ Cache.prototype.get = function(key, fn, params, format, config) {
   return new Promise(function(resolve, reject) {
     // Shift all the parameters if no key was passed in;
     if (typeof key === 'function') {
-      config = format;
+      config = format || this.defaultCacheConfig;
       format = params || Cache.returnData;
       params = fn;
       fn = key;
@@ -35,17 +35,17 @@ Cache.prototype.get = function(key, fn, params, format, config) {
     }
 
     if (!key) {
-      throw('No key was passed in, and function did not have a name.');
+      reject('No key was passed in, and function did not have a name.');
     }
+
+    var shasum = crypto.createHash('sha1');
+    shasum.update(JSON.stringify(params) || '');
+    var paramsHash = shasum.digest('hex');
 
     var apply = typeof params === 'Array' ? 'apply' : 'call';
 
-    var shasum = crypto.createHash('sha1');
-    shasum.update(JSON.stringify(params));
-    var paramsHash = shasum.digest('hex');
-
     fn[apply](undefined, params).then(function(data){
-      cache.setCaches(key, paramsHash, format(data));
+      cache.setCaches(key, paramsHash, format(data), config);
       resolve(data);
     }, function(error) {
       reject(error);
@@ -53,12 +53,12 @@ Cache.prototype.get = function(key, fn, params, format, config) {
   });
 };
 
-Cache.prototype.setCaches = function(key, hash, data) {
-  this.setRequestCache(key, hash, data);
-  this.setDataCache(data);
+Cache.prototype.setCaches = function(key, hash, data, config) {
+  this.setRequestCache(key, hash, data, config);
+  this.setDataCache(data, config);
 }
 
-Cache.prototype.setRequestCache = function(key, hash, data) {
+Cache.prototype.setRequestCache = function(key, hash, data, config) {
   var dataType;
   var id;
 

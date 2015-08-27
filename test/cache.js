@@ -30,6 +30,10 @@ function formatResponse(object) {
   }
 }
 
+function stub(){ 
+  return Promise.resolve(0);
+}
+
 describe('Cache', function() {
   describe('setup', function() {
     it('takes rules', function() {
@@ -66,7 +70,6 @@ describe('Cache', function() {
   });
 
   describe('getting', function() {
-
     it('uses function name as a default key', function(done) {
       var cache = new Cache();
       cache.get(apiGET, {}, formatResponse).then(function() {
@@ -79,7 +82,7 @@ describe('Cache', function() {
 
     it('throws if no function name or key is supplied', function(done) {
       var cache = new Cache();
-      cache.get(function(){}, {}, formatResponse).then(function(done) {
+      cache.get(function(){}).then(function() {
         expect.fail();
         done();
       }, function(e) {
@@ -88,7 +91,21 @@ describe('Cache', function() {
       });
     });
 
-    it('uses default config if none is supplied', function() {
+    it('uses default config if none is supplied', function(done) {
+      var defaultConfig = {};
+
+      var cache = new Cache({
+        defaultCacheConfig: defaultConfig
+      });
+
+      sinon.stub(Cache.prototype, 'setCaches');
+
+      cache.get(stub).then(function() {
+        expect(Cache.prototype.setCaches).to.have.been.calledWithMatch(defaultConfig);
+        done();
+      }, function(e) {
+        console.log(e.stack)
+      });
     });
   });
 });
