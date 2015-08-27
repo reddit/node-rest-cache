@@ -8,7 +8,7 @@ chai.use(sinonChai)
 var Cache = require('../index.js');
 
 function apiGET (options) {
-  if (options.id) {
+  if (options && options.id) {
     if (options.id < 10) {
       return Promise.resolve({
         id: options.id
@@ -73,7 +73,7 @@ describe('Cache', function() {
     it('uses function name as a default key', function(done) {
       var cache = new Cache();
       cache.get(apiGET, {}, formatResponse).then(function() {
-        expect(cache.requestCache.apiGET).to.exist;
+        expect(cache.requestCache.apiGET).to.not.be.undefined;
         done();
       }, function(e) {
         console.log(e.stack);
@@ -82,7 +82,9 @@ describe('Cache', function() {
 
     it('throws if no function name or key is supplied', function(done) {
       var cache = new Cache();
-      cache.get(function(){}).then(function() {
+      var fn = function(){};
+
+      cache.get(fn).then(function() {
         expect.fail();
         done();
       }, function(e) {
@@ -100,12 +102,59 @@ describe('Cache', function() {
 
       sinon.stub(Cache.prototype, 'setCaches');
 
-      cache.get(stub).then(function() {
+      cache.get(apiGET).then(function() {
         expect(Cache.prototype.setCaches).to.have.been.calledWithMatch(defaultConfig);
+        Cache.prototype.setCaches.restore();
         done();
       }, function(e) {
         console.log(e.stack)
       });
+    });
+
+    it('loads from cache on rule success', function(done) {
+      var stub = sinon.stub(Cache.prototype, 'loadFromCache');
+
+      var cache = new Cache({
+        rules: {
+          success: function() {
+            return true;
+          }
+        }
+      });
+
+      cache.get(apiGET, {}, formatResponse, {
+        rules: [cache.rules.success]
+      }).then(function() {
+        expect(Cache.prototype.loadFromCache).to.have.been.called.once;
+        stub.restore();
+        done();
+      }, function(e) {
+        stub.restore();
+        console.log(e.stack);
+      });
+    });
+
+    it('does not load from cache on rule failure', function(done) {
+      var stub = sinon.stub(Cache.prototype, 'loadFromCache');
+
+      var cache = new Cache({
+        rules: {
+          success: function() {
+            return false;
+          }
+        }
+      });
+
+      cache.get(apiGET, {}, formatResponse, {
+        rules: [cache.rules.success]
+      }).then(function() {
+        expect(Cache.prototype.loadFromCache).to.not.have.been.called.once;
+        stub.restore();
+        done();
+      }, function(e) {
+        console.log(e.stack);
+        stub.restore();
+      })
     });
   });
 });

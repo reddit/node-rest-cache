@@ -24,34 +24,57 @@ Cache.prototype.setUpDataCache = function() {
 Cache.prototype.get = function(key, fn, params, format, config) {
   var cache = this;
 
+  if (typeof key === 'function') {
+    config = format || this.defaultCacheConfig;
+    format = params || Cache.returnData;
+    params = fn;
+    fn = key;
+    key = fn.name;
+  }
+
+  if (!key) {
+    return Promise.reject('No key was passed in, and function did not have a name.');
+  }
+
+  // Shift all the parameters if no key was passed in;
+  var shasum = crypto.createHash('sha1');
+  shasum.update(JSON.stringify(params) || '');
+  var paramsHash = shasum.digest('hex');
+
+  if (config.rules) {
+    var failedRule = false;
+
+    failedRule = config.rules.some(function(rule) {
+      return !rule(params);
+    });
+
+    if (!failedRule) {
+      var cachedData = this.loadFromCache(key, paramsHash, config);
+
+      if (cachedData) {
+        return Promise.resolve(cachedData);
+      }
+    }
+  }
+
   return new Promise(function(resolve, reject) {
-    // Shift all the parameters if no key was passed in;
-    if (typeof key === 'function') {
-      config = format || this.defaultCacheConfig;
-      format = params || Cache.returnData;
-      params = fn;
-      fn = key;
-      key = fn.name;
-    }
-
-    if (!key) {
-      reject('No key was passed in, and function did not have a name.');
-    }
-
-    var shasum = crypto.createHash('sha1');
-    shasum.update(JSON.stringify(params) || '');
-    var paramsHash = shasum.digest('hex');
-
     var apply = typeof params === 'Array' ? 'apply' : 'call';
 
+    // check cache
+    // if rule failed, don't load it from the cache
+
     fn[apply](undefined, params).then(function(data){
-      cache.setCaches(key, paramsHash, format(data), config);
+      var formattedData = format(data);
+      cache.setCaches(key, paramsHash, formattedData, config);
       resolve(data);
     }, function(error) {
       reject(error);
     });
   });
 };
+
+Cache.prototype.loadFromCache = function(key, hash, config) {
+}
 
 Cache.prototype.setCaches = function(key, hash, data, config) {
   this.setRequestCache(key, hash, data, config);
@@ -75,7 +98,7 @@ Cache.prototype.setRequestCache = function(key, hash, data, config) {
   }
 }
 
-Cache.prototype.setDataCache = function(data) {
+Cache.prototype.setDataCache = function(data, config) {
 }
 
 Cache.returnData = function(d) {
