@@ -19,6 +19,20 @@ the event of a `patch` that edits an object.
 
 ## How it works
 
+The constructor, `new Cache({ })`, takes settings:
+
+* `rules`, a list of rules that operate on the parameters passed into an api request.
+  Rules are functions that return booleans: if they return false, the cache
+  is skipped (and does not invalidate the data cache.)
+* `defaultCacheConfig`, the default config for all API calls if a config is not
+  specified. The `cache` rules here also set the default request cache LRU
+  settings. `defaultCacheConfig.cache` uses the same parameters as the
+  [LRU](https://github.com/isaacs/node-lru-cache).
+* `dataTypes` is an object that contains `key` - `config` pairs. The `config`
+  optoinally contains `idProperty`, which defaults to `id` if not set (this
+  is how the request IDs are mapped to the data IDs), and `cache`, which
+  is the LRU cache config. (If not specified, uses the default as noted above.)
+
 The primary function, `cache.get`, takes a series of arguments:
 
 * A key by which to look up things in the cache. This can be ommitted if your
@@ -32,7 +46,7 @@ The primary function, `cache.get`, takes a series of arguments:
   cache can put data into the proper place. (This also means you can work with
   multiple data types at once.)
 
-The cache will generate a key based on a SHA of the JSON.stringified parameters.
+The cache will generate a key based on a sha1 of the JSON.stringified parameters.
 It will then look up a list of IDs returned for that key+sha. If it does not
 exist, it will return a Promise, and attempt to resolve the function passed in
 with the parameters supplied. It will pass on a promise rejection, or if it is
