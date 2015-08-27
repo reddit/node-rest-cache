@@ -107,7 +107,7 @@ var cache = new cache.get({
 
 function formatListings(data) {
   return {
-    listings: listings
+    listings: data
   };
 }
 
