@@ -7,6 +7,20 @@ chai.use(sinonChai)
 
 var Cache = require('../index.js');
 
+var config = {
+  defaultCacheConfig: {
+    cache:  {
+      max: 50
+    }
+  }
+};
+
+
+var fakeData = [
+  { id: 0 },
+  { id: 1 }
+];
+
 function apiGET (options) {
   if (options && options.id) {
     if (options.id < 10) {
@@ -18,10 +32,7 @@ function apiGET (options) {
     }
   }
 
-  return Promise.resolve([
-    { id: 0 },
-    { id: 1 }
-  ]);
+  return Promise.resolve(fakeData);
 }
 
 function formatResponse(object) {
@@ -49,13 +60,8 @@ describe('Cache', function() {
     });
 
     it('takes a default config', function() {
-      var config = {};
-
-      var cache = new Cache({
-        defaultCacheConfig: config
-      });
-
-      expect(cache.defaultCacheConfig).to.equal(config);
+      var cache = new Cache(config);
+      expect(cache.defaultCacheConfig).to.equal(config.defaultCacheConfig);
     });
 
     it('takes datatypes', function() {
@@ -71,8 +77,11 @@ describe('Cache', function() {
 
   describe('getting', function() {
     it('uses function name as a default key', function(done) {
-      var cache = new Cache();
-      cache.get(apiGET, {}, formatResponse).then(function() {
+      var cache = new Cache(config);
+
+      cache.get(apiGET, [], {
+        format: formatResponse
+      }).then(function() {
         expect(cache.requestCache.apiGET).to.not.be.undefined;
         done();
       }, function(e) {
@@ -81,7 +90,7 @@ describe('Cache', function() {
     });
 
     it('throws if no function name or key is supplied', function(done) {
-      var cache = new Cache();
+      var cache = new Cache(config);
       var fn = function(){};
 
       cache.get(fn).then(function() {
@@ -94,16 +103,12 @@ describe('Cache', function() {
     });
 
     it('uses default config if none is supplied', function(done) {
-      var defaultConfig = {};
-
-      var cache = new Cache({
-        defaultCacheConfig: defaultConfig
-      });
+      var cache = new Cache(config);
 
       sinon.stub(Cache.prototype, 'setCaches');
 
       cache.get(apiGET).then(function() {
-        expect(Cache.prototype.setCaches).to.have.been.calledWithMatch(defaultConfig);
+        expect(Cache.prototype.setCaches.args[0]).to.include(config.defaultCacheConfig);
         Cache.prototype.setCaches.restore();
         done();
       }, function(e) {
@@ -119,11 +124,17 @@ describe('Cache', function() {
           success: function() {
             return true;
           }
+        },
+        defaultCacheConfig: {
+          cache: { max: 50 }
         }
       });
 
-      cache.get(apiGET, {}, formatResponse, {
-        rules: [cache.rules.success]
+      cache.get(apiGET, [], {
+        format: formatResponse,
+        config: {
+          rules: [cache.rules.success]
+        }
       }).then(function() {
         expect(Cache.prototype.loadFromCache).to.have.been.called.once;
         stub.restore();
@@ -135,6 +146,10 @@ describe('Cache', function() {
     });
 
     it('does not load from cache on rule failure', function(done) {
+      var defaultConfig = {
+        cache: { max: 50 }
+      };
+
       var stub = sinon.stub(Cache.prototype, 'loadFromCache');
 
       var cache = new Cache({
@@ -142,11 +157,15 @@ describe('Cache', function() {
           success: function() {
             return false;
           }
-        }
+        },
+        config: defaultConfig,
       });
 
-      cache.get(apiGET, {}, formatResponse, {
-        rules: [cache.rules.success]
+      cache.get(apiGET, [], {
+        format: formatResponse,
+        config: {
+          rules: [cache.rules.success]
+        }
       }).then(function() {
         expect(Cache.prototype.loadFromCache).to.not.have.been.called.once;
         stub.restore();
@@ -155,6 +174,21 @@ describe('Cache', function() {
         console.log(e.stack);
         stub.restore();
       })
+    });
+
+    it('loads from a populated cache', function(done) {
+      var cache = new Cache(config);
+
+      cache.get(apiGET, [], {
+        format: formatResponse
+      }).then(function() {
+        cache.getById('objects', 0, apiGET, [{ id: 0 }]).then(function(o) {
+          expect(o).to.equal(fakeData[0]);
+          done();
+        });
+      }, function(e) {
+        console.log(e.stack);
+      });
     });
   });
 });

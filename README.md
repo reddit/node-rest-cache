@@ -35,16 +35,17 @@ The constructor, `new Cache({ })`, takes settings:
 
 The primary function, `cache.get`, takes a series of arguments:
 
-* A key by which to look up things in the cache. This can be ommitted if your
-  function has a unique `name` (`function.name`)
-* The function to be returned (should return a promise)
-* Optionally, The arguments to be passed to the function
-* Optionally, the cache configuration to be used (or else default configuration
-  will be used. Provided config will *not* be merged with the default.
-* Optionally, a response value formatting function to be returned pre-cache.
-  This should return a flat object such as `{ datatype: data }` so that the
-  cache can put data into the proper place. (This also means you can work with
-  multiple data types at once.)
+* The API function (must return a promise)
+* The arguments to be passed to the function
+* An options object, may optionally contain:
+  * `key`, used to look up a cache of ids returned by a given. This can be
+    ommitted if your function has a unique `name` (`function.name`)
+  * Optionally, the cache configuration to be used; otherwise, default configuration
+    will be used. Provided config will *not* be merged with the default.
+  * Optionally, a response value formatting function to be returned pre-cache.
+    This should return a flat object such as `{ datatype: data }` so that the
+    cache can put data into the proper place. (This also means you can work with
+    multiple data types at once.)
 
 The cache will generate a key based on a sha1 of the JSON.stringified parameters.
 It will then look up a list of IDs returned for that key+sha. If it does not
