@@ -102,6 +102,10 @@ var cache = new cache.get({
   dataTypes:
     listings: {
       idProperty: '_id'
+    },
+    cache: {
+      max: 75,
+      maxAge: 1000 * 60 * 3
     }
   }
 });
@@ -112,7 +116,7 @@ function formatListings(data) {
   };
 }
 
-var apiParameters = { subreddit: 'funny' };
+var apiParams = { subreddit: 'funny' };
 
 // Use `api.listings.get.name` as the key, and use the default config.
 var listings = cache.get(api.listings.get, [apiParams], formatListings);
@@ -126,6 +130,7 @@ listings.then(
 // cache refresh of the listing in question, even though it may already be in
 // the listing cache.
 
+var apiParams = { subreddit: 'funny' };
 var editConfig = {/*...*/};
 var apiParameters = { _id: 1 };
 var key = 'edit-listing-cache';
@@ -149,6 +154,10 @@ api.listings.patch(params).then(function(res) {
 
 // Obliterate the cache
 cache.reset('listings');
+
+// Load a single object
+var apiParams = { id: 17 };
+cache.getById('listings', apiParams.id, api.listings.get, [apiParams]);
 ```
 
 ## Other Notes for Your Careful Consideration
