@@ -29,7 +29,7 @@ The constructor, `new Cache({ })`, takes settings:
   settings. `defaultRequestCacheConfig.cache` uses the same parameters as the
   [LRU](https://github.com/isaacs/node-lru-cache).
 * `dataTypes` is an object that contains `key` - `config` pairs. The `config`
-  optoinally contains `idProperty`, which defaults to `id` if not set (this
+  optionally contains `idProperty`, which defaults to `id` if not set (this
   is how the request IDs are mapped to the data IDs), and `cache`, which
   is the LRU cache config. (If not specified, uses the default as noted above.)
 
@@ -109,7 +109,7 @@ var cache = new cache.get({
     cache: {
       max: 50, //50 items
       length: function(n) { return n.length }, //how length is determined
-      dispose: function(key, n) { n.close() }, // optoinal handling on disposal
+      dispose: function(key, n) { n.close() }, // optional handling on disposal
       maxAge: 1000 * 60 * 5, // 5 minutes
     },
     rules: [ loggedOut ]
