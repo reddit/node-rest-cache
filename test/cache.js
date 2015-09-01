@@ -191,4 +191,73 @@ describe('Cache', function() {
       });
     });
   });
+
+  describe('reset', function() {
+    var cache;
+
+    beforeEach(function() {
+      cache = new Cache(config);
+
+      return cache.get(apiGET, [], {
+        format: formatResponse
+      })
+    });
+
+    it('clears the entire data cache', function() {
+      expect(cache.dataCache.objects).to.not.be.undefined;
+      expect(cache.dataCache.objects.get(0)).to.equal(fakeData[0]);
+      cache.resetData();
+      expect(cache.dataCache.objects).to.be.undefined;
+    });
+
+    it('clears out a data type entirely', function() {
+      expect(cache.dataCache.objects).to.not.be.undefined;
+      expect(cache.dataCache.objects.get(0)).to.equal(fakeData[0]);
+      cache.resetData('objects');
+      expect(cache.dataCache.objects).to.not.be.undefined;
+      expect(cache.dataCache.objects.has(0)).to.be.false;
+    });
+
+    it('updates a single object in a type', function() {
+      expect(cache.dataCache.objects).to.not.be.undefined;
+      expect(cache.dataCache.objects.get(0)).to.equal(fakeData[0]);
+      cache.resetData('objects', { id: 0, name: 'steve' });
+      expect(cache.dataCache.objects.get(0).name).to.equal('steve');
+    });
+
+    it('updates an array of objects in a type', function() {
+      expect(cache.dataCache.objects).to.not.be.undefined;
+      expect(cache.dataCache.objects.get(0)).to.equal(fakeData[0]);
+      cache.resetData('objects', [{ id: 0, name: 'steve' }]);
+      expect(cache.dataCache.objects.get(0).name).to.equal('steve');
+    });
+
+    it('clears the entire request cache', function() {
+      expect(cache.requestCache.apiGET).to.not.be.undefined;
+      cache.resetRequests();
+      expect(cache.requestCache.apiGET).to.be.undefined;
+    });
+
+    it('clears the cache for a given key', function() {
+      expect(cache.requestCache.apiGET).to.not.be.undefined;
+      cache.resetRequests('apiGET');
+      expect(cache.requestCache.apiGET.keys().length).to.equal(0);
+    });
+
+    it('clears the cache for a given key/parameter set', function() {
+      expect(cache.requestCache.apiGET.get(Cache.generateHash([]))).to.not.be.undefined;
+      cache.resetRequests('apiGET', []);
+      expect(cache.requestCache.apiGET.get(Cache.generateHash([]))).to.be.undefined;
+    });
+
+    it('updates the ids for a given key/parameter set', function(done) {
+      expect(cache.requestCache.apiGET).to.not.be.undefined;
+      cache.resetRequests('apiGET', [], { objects: [1] });
+
+      cache.get(apiGET, [], {}).then(function(data) {
+        expect(data.objects[0]).to.equal(fakeData[1]);
+        done();
+      });
+    });
+  });
 });

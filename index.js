@@ -33,7 +33,7 @@ Cache.prototype.get = function(fn, params, options) {
     return Promise.reject('No key was passed in, and function did not have a name.');
   }
 
-  var paramsHash = this.generateHash(params);
+  var paramsHash = Cache.generateHash(params);
 
   var failedRule = false;
 
@@ -72,13 +72,8 @@ Cache.prototype.getById = function(type, id, fn, params, options) {
   }
 
   return this.get(fn, params, options);
-}
+};
 
-Cache.prototype.generateHash = function(params) {
-  var shasum = crypto.createHash('sha1');
-  shasum.update(JSON.stringify(params) || '');
-  return shasum.digest('hex');
-}
 
 Cache.prototype.loadFromCache = function(key, hash, config) {
   if (!this.requestCache[key]) { return; }
@@ -87,33 +82,46 @@ Cache.prototype.loadFromCache = function(key, hash, config) {
   if(!requestCache) { return; }
 
   var obj = {};
+  var dataCache;
+  var found = true;
+
   for (var type in requestCache) {
-    if (!this.dataCache[type]) { return; }
+    dataCache = this.dataCache[type];
+    if (!dataCache) { return; }
 
-    var id = this.dataCache[type] ? this.cache.dataType[type].idProperty || 'id' : 'id';
+    var id = dataCache.idProperty ? dataCache.idProperty : 'id';
 
-    obj[type] = this.dataCache[type].filter(function(d) {
-      return this.dataCache[type].indexOf(d[id]) > -1;
+    obj[type] = requestCache[type].map(function(id) {
+      var data = dataCache.get(id);
+      if (!data) {
+        found = false;
+      }
+
+      return data;
     });
+
+    if (!found) { return; }
   }
 
   return obj;
-}
+};
 
 Cache.prototype.setCaches = function(key, hash, data, config) {
   this.setRequestCache(key, hash, data, config);
   this.setDataCache(data);
-}
+};
 
 Cache.prototype.setRequestCache = function(key, hash, data, config) {
   var dataType;
   var id;
 
-  if (!config.cache) {
-    throw('No LRU configuration passed in, aborting.');
-  }
+  if (!this.requestCache[key]) {
+    if (!config.cache) {
+      throw('No LRU configuration passed in, aborting.');
+    }
 
-  this.requestCache[key] = this.requestCache[key] || new LRU(config.cache);
+    this.requestCache[key] = this.requestCache[key] || new LRU(config.cache);
+  }
 
   var idCache = {};
 
@@ -127,20 +135,17 @@ Cache.prototype.setRequestCache = function(key, hash, data, config) {
   }
 
   this.requestCache[key].set(hash, idCache);
-}
+};
 
 Cache.prototype.setDataCache = function(data) {
   var dataType;
   var id;
 
   for (var k in data) {
-    var config = (this.dataTypes[k] || {}).cache || this.defaultCacheConfig.cache;
-
-    if (!config) {
-      throw('No LRU configuration passed in, aborting.');
+    if (!this.dataCache[k]) {
+      this.resetData(k);
     }
 
-    this.dataCache[k] = this.dataCache[k] || new LRU(config);
     dataType = this.dataTypes[k];
     id = dataType ? dataType.idProperty || 'id' : 'id';
 
@@ -148,10 +153,76 @@ Cache.prototype.setDataCache = function(data) {
       this.dataCache[k].set(data[k][o][id], data[k][o]);
     }
   }
-}
+};
+
+Cache.prototype.resetData = function(type, data) {
+  if (!type) {
+    this.dataCache = {};
+    return;
+  }
+
+  if (!this.dataCache[type]) {
+    var cacheConfig = this.dataTypes[type] ? this.dataTypes[type].cache : this.defaultCacheConfig.cache;
+    this.dataCache[type] = new LRU(cacheConfig);
+    return;
+  }
+
+  var cache = this.dataCache[type];
+
+  if (!data) {
+    cache.reset();
+    return;
+  }
+
+  var id = cache.idProperty || 'id';
+
+  // If it's an array
+  if (data.hasOwnProperty('length')) {
+    data.forEach(function(d) {
+      cache.set(d[id], d);
+    });
+  } else {
+    cache.set(data[id], data);
+  }
+
+  return;
+};
+
+Cache.prototype.resetRequests = function(key, parameters, ids) {
+  if (typeof key === 'function') {
+    key = key.name;
+  }
+
+  if (!key) {
+    this.requestCache = {};
+    return;
+  }
+
+  var cache = this.requestCache[key];
+
+  if (!parameters) {
+    cache.reset();
+    return;
+  }
+
+  var hash = Cache.generateHash(parameters);
+
+  if (ids) {
+    cache.set(hash, ids);
+    return;
+  }
+
+  cache.del(hash);
+};
 
 Cache.returnData = function(d) {
   return d;
 }
+
+Cache.generateHash = function(params) {
+  var shasum = crypto.createHash('sha1');
+  shasum.update(JSON.stringify(params) || '');
+  return shasum.digest('hex');
+};
 
 module.exports = Cache;

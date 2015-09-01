@@ -66,7 +66,7 @@ If the data is in the cache, it will:
   be run, as we will assume the cache is stale.
 
 
-Another function, `cache.reset`, allows you to reset a single object, a list of
+Another function, `cache.resetData`, allows you to reset a single object, a list of
 objects, or to reset a cache entirely for a given data type. It takes the
 arguments:
 
@@ -76,6 +76,21 @@ arguments:
 It will attempt to match the object (or, each object in the array), and replace
 the objects in the cache with the supplied data. Or, if none was passed in, the
 cache will be cleared for that data type.
+
+If no arguments are provided, it will reset the entire data cache.
+
+You can also use `cache.resetRequests()` to reset the request cache. It takes
+up to three optional arguments as well:
+
+* Cache key
+* Cache parameters list
+* List of ids
+
+If only key is used, the entire cache for that key will be reset; if both, then
+it will reset for that single reset; if key, parameters, and ids are sent, it
+will update the ids to the passed-in list.
+
+If no arguments are provided, it will reset the entire request cache.
 
 ## A Sample
 
