@@ -8,9 +8,14 @@ chai.use(sinonChai)
 var Cache = require('../index.js');
 
 var config = {
-  defaultCacheConfig: {
-    cache:  {
-      max: 50
+  defaultRequestCacheConfig: {
+    cache: {
+      max: 2
+    }
+  },
+  defaultDataCacheConfig: {
+    cache: {
+      max: 2
     }
   }
 };
@@ -61,7 +66,7 @@ describe('Cache', function() {
 
     it('takes a default config', function() {
       var cache = new Cache(config);
-      expect(cache.defaultCacheConfig).to.equal(config.defaultCacheConfig);
+      expect(cache.defaultRequestCacheConfig).to.equal(config.defaultRequestCacheConfig);
     });
 
     it('takes datatypes', function() {
@@ -108,7 +113,7 @@ describe('Cache', function() {
       sinon.stub(Cache.prototype, 'setCaches');
 
       cache.get(apiGET).then(function() {
-        expect(Cache.prototype.setCaches.args[0]).to.include(config.defaultCacheConfig);
+        expect(Cache.prototype.setCaches.args[0]).to.include(config.defaultRequestCacheConfig);
         Cache.prototype.setCaches.restore();
         done();
       }, function(e) {
@@ -125,7 +130,7 @@ describe('Cache', function() {
             return true;
           }
         },
-        defaultCacheConfig: {
+        defaultRequestCacheConfig: {
           cache: { max: 50 }
         }
       });

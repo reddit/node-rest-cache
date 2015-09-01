@@ -5,7 +5,9 @@ function Cache(config) {
   var config = config || {};
 
   this.rules = config.rules || {};
-  this.defaultCacheConfig = config.defaultCacheConfig || {};
+
+  this.defaultDataCacheConfig = config.defaultDataCacheConfig || {};
+  this.defaultRequestCacheConfig = config.defaultRequestCacheConfig || {};
   this.dataTypes = config.dataTypes || {};
 
   this.requestCache = {};
@@ -15,9 +17,8 @@ function Cache(config) {
 }
 
 Cache.prototype.setUpDataCache = function() {
-  for (var k in this.dataTypes) {
-    var cacheConfig = this.dataTypes[k].cache || this.defaultCacheConfig.cache;
-    this.dataCache[k] = new LRU(cacheConfig);
+  for (var type in this.dataTypes) {
+    this.resetData(type);
   }
 }
 
@@ -25,7 +26,7 @@ Cache.prototype.get = function(fn, params, options) {
   var cache = this;
   var options = options || {};
 
-  var config = options.config || this.defaultCacheConfig;
+  var config = options.config || this.defaultRequestCacheConfig;
   var format = options.format || Cache.returnData;
   var key = options.name || fn.name;
 
@@ -162,13 +163,18 @@ Cache.prototype.resetData = function(type, data) {
     return;
   }
 
-  if (!this.dataCache[type]) {
-    var cacheConfig = this.dataTypes[type] ? this.dataTypes[type].cache : this.defaultCacheConfig.cache;
-    this.dataCache[type] = new LRU(cacheConfig);
+  var cache = this.dataCache[type];
+
+  if (!cache) {
+    var cacheConfig = this.getDataCacheConfig(type);
+
+    if (cacheConfig) {
+      this.dataCache[type] = new LRU(cacheConfig);
+    }
+
     return;
   }
 
-  var cache = this.dataCache[type];
 
   if (!data) {
     cache.reset();
@@ -238,6 +244,16 @@ Cache.prototype.deleteData = function(type, data) {
 Cache.prototype.getidProperty = function(type) {
   var dataType = this.dataTypes[type];
   return dataType ? dataType.idProperty || 'id' : 'id';
+}
+
+Cache.prototype.getDataCacheConfig = function(type) {
+  if (this.dataTypes && this.dataTypes[type]) {
+    if (this.dataTypes[type].hasOwnProperty('cache')) {
+      return this.dataTypes[type].cache;
+    }
+  }
+
+  return this.defaultDataCacheConfig.cache;
 }
 
 Cache.returnData = function(d) {

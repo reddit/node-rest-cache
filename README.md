@@ -24,9 +24,9 @@ The constructor, `new Cache({ })`, takes settings:
 * `rules`, a list of rules that operate on the parameters passed into an api request.
   Rules are functions that return booleans: if they return false, the cache
   is skipped (and does not invalidate the data cache.)
-* `defaultCacheConfig`, the default config for all API calls if a config is not
+* `defaultRequestCacheConfig`, the default config for all API calls if a config is not
   specified. The `cache` rules here also set the default request cache LRU
-  settings. `defaultCacheConfig.cache` uses the same parameters as the
+  settings. `defaultRequestCacheConfig.cache` uses the same parameters as the
   [LRU](https://github.com/isaacs/node-lru-cache).
 * `dataTypes` is an object that contains `key` - `config` pairs. The `config`
   optoinally contains `idProperty`, which defaults to `id` if not set (this
@@ -105,7 +105,7 @@ var cache = new cache.get({
       return !params.token;
     },
   },
-  defaultCacheConfig: {
+  defaultRequestCacheConfig: {
     cache: {
       max: 50, //50 items
       length: function(n) { return n.length }, //how length is determined
@@ -116,11 +116,14 @@ var cache = new cache.get({
   },
   dataTypes:
     listings: {
-      idProperty: '_id'
+      idProperty: '_id',
+      cache: {
+        max: 75,
+        maxAge: 1000 * 60 * 3
+      }
     },
-    cache: {
-      max: 75,
-      maxAge: 1000 * 60 * 3
+    comments: {
+      cache: false, // don't cache comments
     }
   }
 });
