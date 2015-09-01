@@ -19,6 +19,8 @@ the event of a `patch` that edits an object.
 
 ## How it works
 
+(See [./test](./test) for examples)
+
 The constructor, `new Cache({ })`, takes settings:
 
 * `rules`, a list of rules that operate on the parameters passed into an api request.
@@ -137,7 +139,9 @@ function formatListings(data) {
 var apiParams = { subreddit: 'funny' };
 
 // Use `api.listings.get.name` as the key, and use the default config.
-var listings = cache.get(api.listings.get, [apiParams], formatListings);
+var listings = cache.get(api.listings.get, [apiParams], {
+  format: formatListings
+});
 
 listings.then(
   function(data) { /*...*/ },
@@ -149,15 +153,15 @@ listings.then(
 // the listing cache.
 
 var apiParams = { subreddit: 'funny' };
-var editConfig = {/*...*/};
 var apiParameters = { _id: 1 };
 var key = 'edit-listing-cache';
 var listing = cache.get(
                 key,
                 api.listings.get,
                 [apiParams],
-                formatListings,
-                editConfig
+                {
+                  format: formatListings,
+                }
               );
 
 listing.then(
