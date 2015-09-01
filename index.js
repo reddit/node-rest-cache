@@ -84,12 +84,13 @@ Cache.prototype.loadFromCache = function(key, hash, config) {
   var obj = {};
   var dataCache;
   var found = true;
+  var id;
 
   for (var type in requestCache) {
     dataCache = this.dataCache[type];
     if (!dataCache) { return; }
 
-    var id = dataCache.idProperty ? dataCache.idProperty : 'id';
+    id = this.getidProperty(type);
 
     obj[type] = requestCache[type].map(function(id) {
       var data = dataCache.get(id);
@@ -126,8 +127,7 @@ Cache.prototype.setRequestCache = function(key, hash, data, config) {
   var idCache = {};
 
   for (var type in data) {
-    dataType = this.dataTypes[type];
-    id = dataType ? dataType.idProperty || 'id' : 'id';
+    id = this.getidProperty(type);
 
     idCache[type] = data[type].map(function(d) {
       return d[id];
@@ -147,7 +147,8 @@ Cache.prototype.setDataCache = function(data) {
     }
 
     dataType = this.dataTypes[k];
-    id = dataType ? dataType.idProperty || 'id' : 'id';
+
+    id = this.getidProperty(k);
 
     for (var o in data[k]) {
       this.dataCache[k].set(data[k][o][id], data[k][o]);
@@ -174,18 +175,16 @@ Cache.prototype.resetData = function(type, data) {
     return;
   }
 
-  var id = cache.idProperty || 'id';
+  var id = this.getidProperty(type);
 
   // If it's an array
-  if (data.hasOwnProperty('length')) {
+  if (Array.isArray(data)) {
     data.forEach(function(d) {
       cache.set(d[id], d);
     });
   } else {
     cache.set(data[id], data);
   }
-
-  return;
 };
 
 Cache.prototype.resetRequests = function(key, parameters, ids) {
@@ -214,6 +213,32 @@ Cache.prototype.resetRequests = function(key, parameters, ids) {
 
   cache.del(hash);
 };
+
+Cache.prototype.deleteData = function(type, data) {
+  if (!type || !this.dataCache[type]) {
+    return;
+  }
+
+  var dataCache = this.dataCache[type];
+  var id = this.getidProperty(type);
+
+  if (Array.isArray(data)) {
+    data.forEach(function(d) {
+      dataCache.del(d[id]);
+    });
+    return;
+  } else if (typeof data === 'object') {
+    dataCache.del(data[id]);
+    return;
+  }
+
+  dataCache.del(data);
+}
+
+Cache.prototype.getidProperty = function(type) {
+  var dataType = this.dataTypes[type];
+  return dataType ? dataType.idProperty || 'id' : 'id';
+}
 
 Cache.returnData = function(d) {
   return d;

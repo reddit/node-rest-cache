@@ -164,15 +164,24 @@ listing.then(
 
 // Reset an object in the cache that was updated
 api.listings.patch(params).then(function(res) {
-  cache.reset('listings', res.listing);
+  cache.resetData('listings', res.listing);
 });
 
 // Obliterate the cache
-cache.reset('listings');
+cache.resetData('listings');
 
 // Load a single object
 var apiParams = { id: 17 };
 cache.getById('listings', apiParams.id, api.listings.get, [apiParams]);
+
+// Delete an object, then fix the caches
+api.listings.delete(17).then(function(res) {
+  // Remove the object from the data cache
+  cache.deleteData('listings', 17);
+
+  // Optionally force-reset the request if you know the params ahead of time
+  cache.resetRequests(api.listings.get, [], { listings: [15,16,18] });
+});
 ```
 
 ## Other Notes for Your Careful Consideration

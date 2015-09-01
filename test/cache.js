@@ -260,4 +260,40 @@ describe('Cache', function() {
       });
     });
   });
+
+  describe('delete', function() {
+    var cache;
+
+    beforeEach(function() {
+      cache = new Cache(config);
+
+      return cache.get(apiGET, [], {
+        format: formatResponse
+      })
+    });
+
+    it('deletes data from the data cache by id', function() {
+      expect(cache.dataCache.objects).to.not.be.undefined;
+      expect(cache.dataCache.objects.get(0)).to.equal(fakeData[0]);
+      cache.deleteData('objects', 0);
+      expect(cache.dataCache.objects.get(0)).to.be.undefined;
+      expect(cache.dataCache.objects.get(1)).to.not.be.undefined;
+    });
+
+    it('deletes data from the data cache by object', function() {
+      expect(cache.dataCache.objects).to.not.be.undefined;
+      expect(cache.dataCache.objects.get(0)).to.equal(fakeData[0]);
+      cache.deleteData('objects', fakeData[0]);
+      expect(cache.dataCache.objects.get(0)).to.be.undefined;
+      expect(cache.dataCache.objects.get(1)).to.not.be.undefined;
+    });
+
+    it('deletes data from the data cache by array of objects', function() {
+      expect(cache.dataCache.objects).to.not.be.undefined;
+      expect(cache.dataCache.objects.get(0)).to.equal(fakeData[0]);
+      cache.deleteData('objects', fakeData);
+      expect(cache.dataCache.objects.get(0)).to.be.undefined;
+      expect(cache.dataCache.objects.get(1)).to.be.undefined;
+    });
+  });
 });
