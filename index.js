@@ -27,7 +27,6 @@ Cache.prototype.get = function(fn, params, options) {
   var options = options || {};
 
   var config = options.config || this.defaultRequestCacheConfig;
-  var format = options.format || Cache.returnData;
   var key = options.name || fn.name;
 
   if (!key) {
@@ -54,9 +53,13 @@ Cache.prototype.get = function(fn, params, options) {
 
   return new Promise(function(resolve, reject) {
     fn.apply(undefined, params).then(function(data){
-      var formattedData = format(data);
       resolve(data);
-      cache.setCaches(key, paramsHash, formattedData, config);
+
+      if (format) {
+        data = format(data);
+      }
+
+      cache.setCaches(key, paramsHash, format(data), config);
     }, function(error) {
       reject(error);
     });
@@ -68,7 +71,10 @@ Cache.prototype.getById = function(type, id, fn, params, options) {
     var res = this.dataCache[type].get(id);
 
     if (res) {
-      return Promise.resolve(res);
+      var o = {};
+      o[type] = res;
+
+      return Promise.resolve(o);
     }
   }
 
@@ -93,14 +99,19 @@ Cache.prototype.loadFromCache = function(key, hash, config) {
 
     id = this.getidProperty(type);
 
-    obj[type] = requestCache[type].map(function(id) {
-      var data = dataCache.get(id);
-      if (!data) {
-        found = false;
-      }
+    if (requestCache[type].map) {
+      obj[type] = requestCache[type].map(function(id) {
+        var data = dataCache.get(id);
+        if (!data) {
+          found = false;
+        }
 
-      return data;
-    });
+        return data;
+      });
+    } else {
+      obj[type] = dataCache.get(id);
+      found = !!obj[type];
+    }
 
     if (!found) { return; }
   }
@@ -119,7 +130,7 @@ Cache.prototype.setRequestCache = function(key, hash, data, config) {
 
   if (!this.requestCache[key]) {
     if (!config.cache) {
-      throw('No LRU configuration passed in, aborting.');
+      throw('No LRU configuration passed in for '+key+', aborting.');
     }
 
     this.requestCache[key] = this.requestCache[key] || new LRU(config.cache);
@@ -130,9 +141,13 @@ Cache.prototype.setRequestCache = function(key, hash, data, config) {
   for (var type in data) {
     id = this.getidProperty(type);
 
-    idCache[type] = data[type].map(function(d) {
-      return d[id];
-    });
+    if (data[type].map) {
+      idCache[type] = data[type].map(function(d) {
+        return d[id];
+      });
+    } else {
+      idCache[type] =  data[type][id];
+    }
   }
 
   this.requestCache[key].set(hash, idCache);
@@ -151,8 +166,14 @@ Cache.prototype.setDataCache = function(data) {
 
     id = this.getidProperty(k);
 
-    for (var o in data[k]) {
-      this.dataCache[k].set(data[k][o][id], data[k][o]);
+    if (Array.isArray(data[k])) {
+      for (var o in data[k]) {
+        if (data[k][o][id]) {
+          this.dataCache[k].set(data[k][o][id], data[k][o]);
+        }
+      }
+    } else {
+      this.dataCache[k].set(data[k][id], data[k]);
     }
   }
 };
@@ -254,10 +275,6 @@ Cache.prototype.getDataCacheConfig = function(type) {
   }
 
   return this.defaultDataCacheConfig.cache;
-}
-
-Cache.returnData = function(d) {
-  return d;
 }
 
 Cache.generateHash = function(params) {
