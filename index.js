@@ -55,7 +55,7 @@ Cache.prototype.get = function(fn, params, options) {
     fn.apply(undefined, params).then(function(data){
       resolve(data);
 
-      if (format) {
+      if (options.format) {
         data = format(data);
       }
 
