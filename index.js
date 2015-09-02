@@ -56,7 +56,7 @@ Cache.prototype.get = function(fn, params, options) {
       resolve(data);
 
       if (options.format) {
-        data = format(data);
+        data = options.format(data);
       }
 
       cache.setCaches(key, paramsHash, format(data), config);
