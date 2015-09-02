@@ -55,11 +55,11 @@ Cache.prototype.get = function(fn, params, options) {
     fn.apply(undefined, params).then(function(data){
       resolve(data);
 
-      if (format) {
-        data = format(data);
+      if (options.format) {
+        data = options.format(data);
       }
 
-      cache.setCaches(key, paramsHash, format(data), config);
+      cache.setCaches(key, paramsHash, data, config);
     }, function(error) {
       reject(error);
     });
