@@ -20,7 +20,6 @@ var config = {
   }
 };
 
-
 var fakeData = [
   { id: 0 },
   { id: 1 }
@@ -56,18 +55,6 @@ function stub(){
 
 describe('Cache', function() {
   describe('setup', function() {
-    it('takes rules', function() {
-      var rule = function(){};
-
-      var cache = new Cache({
-        rules: {
-          rule: rule,
-        }
-      });
-
-      expect(cache.rules.rule).to.equal(rule);
-    });
-
     it('takes a default config', function() {
       var cache = new Cache(config);
       expect(cache.defaultRequestCacheConfig).to.equal(config.defaultRequestCacheConfig);
@@ -117,7 +104,7 @@ describe('Cache', function() {
       sinon.stub(Cache.prototype, 'setCaches');
 
       cache.get(apiGET).then(function() {
-        expect(Cache.prototype.setCaches.args[0]).to.include(config.defaultRequestCacheConfig);
+        expect(Cache.prototype.setCaches.args[0][3]).to.deep.equal(config.defaultRequestCacheConfig);
         Cache.prototype.setCaches.restore();
         done();
       }, function(e) {
@@ -129,11 +116,6 @@ describe('Cache', function() {
       var stub = sinon.stub(Cache.prototype, 'loadFromCache');
 
       var cache = new Cache({
-        rules: {
-          success: function() {
-            return true;
-          }
-        },
         defaultRequestCacheConfig: {
           cache: { max: 50 }
         }
@@ -141,8 +123,10 @@ describe('Cache', function() {
 
       cache.get(apiGET, [], {
         format: formatResponse,
+        rules: [function() {
+          return true;
+        }],
         config: {
-          rules: [cache.rules.success]
         }
       }).then(function() {
         expect(Cache.prototype.loadFromCache).to.have.been.called.once;
@@ -162,23 +146,20 @@ describe('Cache', function() {
       var stub = sinon.stub(Cache.prototype, 'loadFromCache');
 
       var cache = new Cache({
-        rules: {
-          success: function() {
-            return false;
-          }
-        },
         config: defaultConfig,
       });
 
       cache.get(apiGET, [], {
         format: formatResponse,
-        config: {
-          rules: [cache.rules.success]
-        }
+        rules: [function() {
+          return false;
+        }]
       }).then(function() {
+        //try {
         expect(Cache.prototype.loadFromCache).to.not.have.been.called.once;
         stub.restore();
         done();
+        //}catch(e){console.log(e)}
       }, function(e) {
         console.log(e.stack);
         stub.restore();

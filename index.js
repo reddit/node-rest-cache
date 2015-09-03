@@ -4,8 +4,6 @@ var LRU = require('lru-cache');
 function Cache(config) {
   var config = config || {};
 
-  this.rules = config.rules || {};
-
   this.defaultDataCacheConfig = config.defaultDataCacheConfig || {};
   this.defaultRequestCacheConfig = config.defaultRequestCacheConfig || {};
   this.dataTypes = config.dataTypes || {};
@@ -24,10 +22,12 @@ Cache.prototype.setUpDataCache = function() {
 
 Cache.prototype.get = function(fn, params, options) {
   var cache = this;
-  var options = options || {};
-
-  var config = options.config || this.defaultRequestCacheConfig;
+  var options = options || this.defaultRequestCacheConfig || {};
   var key = options.name || fn.name;
+
+  if (!options.cache && this.defaultRequestCacheConfig.cache) {
+    options.cache = this.defaultRequestCacheConfig.cache;
+  }
 
   if (!key) {
     return Promise.reject('No key was passed in, and function did not have a name.');
@@ -37,14 +37,14 @@ Cache.prototype.get = function(fn, params, options) {
 
   var failedRule = false;
 
-  if (config.rules) {
-    failedRule = config.rules.some(function(rule) {
+  if (options.rules) {
+    failedRule = options.rules.some(function(rule) {
       return !rule(params);
     });
   }
 
   if (!failedRule) {
-    var cachedData = this.loadFromCache(key, paramsHash, config);
+    var cachedData = this.loadFromCache(key, paramsHash);
 
     if (cachedData) {
       if (options.unformat) {
@@ -63,7 +63,7 @@ Cache.prototype.get = function(fn, params, options) {
         data = options.format(data);
       }
 
-      cache.setCaches(key, paramsHash, data, config);
+      cache.setCaches(key, paramsHash, data, options);
     }, function(error) {
       reject(error);
     });
@@ -90,7 +90,7 @@ Cache.prototype.getById = function(type, id, fn, params, options) {
 };
 
 
-Cache.prototype.loadFromCache = function(key, hash, config, unformat) {
+Cache.prototype.loadFromCache = function(key, hash) {
   if (!this.requestCache[key]) { return; }
 
   var requestCache = this.requestCache[key].get(hash);
@@ -124,28 +124,24 @@ Cache.prototype.loadFromCache = function(key, hash, config, unformat) {
     if (!found) { return; }
   }
 
-  if (unformat) {
-    obj = unformat(obj);
-  }
-
   return obj;
 };
 
-Cache.prototype.setCaches = function(key, hash, data, config) {
-  this.setRequestCache(key, hash, data, config);
+Cache.prototype.setCaches = function(key, hash, data, options) {
+  this.setRequestCache(key, hash, data, options);
   this.setDataCache(data);
 };
 
-Cache.prototype.setRequestCache = function(key, hash, data, config) {
+Cache.prototype.setRequestCache = function(key, hash, data, options) {
   var dataType;
   var id;
 
   if (!this.requestCache[key]) {
-    if (!config) {
+    if (!options.cache) {
       throw('No LRU configuration passed in for '+key+', aborting.');
     }
 
-    this.requestCache[key] = this.requestCache[key] || new LRU(config);
+    this.requestCache[key] = this.requestCache[key] || new LRU(options.cache);
   }
 
   var idCache = {};
@@ -158,7 +154,7 @@ Cache.prototype.setRequestCache = function(key, hash, data, config) {
         return d[id];
       });
     } else {
-      idCache[type] =  data[type][id];
+      idCache[type] = data[type][id];
     }
   }
 
