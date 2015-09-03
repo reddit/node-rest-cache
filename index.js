@@ -47,6 +47,10 @@ Cache.prototype.get = function(fn, params, options) {
     var cachedData = this.loadFromCache(key, paramsHash, config);
 
     if (cachedData) {
+      if (options.unformat) {
+        cachedData = options.unformat(cachedData);
+      }
+
       return Promise.resolve(cachedData);
     }
   }
@@ -74,6 +78,10 @@ Cache.prototype.getById = function(type, id, fn, params, options) {
       var o = {};
       o[type] = res;
 
+      if (options.unformat) {
+        o = options.unformat(o);
+      }
+
       return Promise.resolve(o);
     }
   }
@@ -82,7 +90,7 @@ Cache.prototype.getById = function(type, id, fn, params, options) {
 };
 
 
-Cache.prototype.loadFromCache = function(key, hash, config) {
+Cache.prototype.loadFromCache = function(key, hash, config, unformat) {
   if (!this.requestCache[key]) { return; }
 
   var requestCache = this.requestCache[key].get(hash);
@@ -116,6 +124,10 @@ Cache.prototype.loadFromCache = function(key, hash, config) {
     if (!found) { return; }
   }
 
+  if (unformat) {
+    obj = unformat(obj);
+  }
+
   return obj;
 };
 
@@ -129,11 +141,11 @@ Cache.prototype.setRequestCache = function(key, hash, data, config) {
   var id;
 
   if (!this.requestCache[key]) {
-    if (!config.cache) {
+    if (!config) {
       throw('No LRU configuration passed in for '+key+', aborting.');
     }
 
-    this.requestCache[key] = this.requestCache[key] || new LRU(config.cache);
+    this.requestCache[key] = this.requestCache[key] || new LRU(config);
   }
 
   var idCache = {};
@@ -168,7 +180,7 @@ Cache.prototype.setDataCache = function(data) {
 
     if (Array.isArray(data[k])) {
       for (var o in data[k]) {
-        if (data[k][o][id]) {
+        if (data[k][o].hasOwnProperty(id)) {
           this.dataCache[k].set(data[k][o][id], data[k][o]);
         }
       }

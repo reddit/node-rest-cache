@@ -131,9 +131,11 @@ var cache = new cache.get({
 });
 
 function formatListings(data) {
-  return {
-    listings: data
-  };
+  return { listings: data };
+}
+
+function unFormatListings(data) {
+  return data.listings;
 }
 
 var apiParams = { subreddit: 'funny' };
@@ -141,6 +143,7 @@ var apiParams = { subreddit: 'funny' };
 // Use `api.listings.get.name` as the key, and use the default config.
 var listings = cache.get(api.listings.get, [apiParams], {
   format: formatListings
+  unformat: unformatListings
 });
 
 listings.then(
@@ -161,11 +164,12 @@ var listing = cache.get(
                 [apiParams],
                 {
                   format: formatListings,
+                  unformat: unformatListings
                 }
               );
 
 listing.then(
-  function(data) { /*...*/ },
+  function(listings) { /*...*/ },
   function(error) { /*...*/ }
 );
 
@@ -179,7 +183,10 @@ cache.resetData('listings');
 
 // Load a single object
 var apiParams = { id: 17 };
-cache.getById('listings', apiParams.id, api.listings.get, [apiParams]);
+cache.getById('listings', apiParams.id, api.listings.get, [apiParams], {
+  format: formatListings,
+  unformat: unformatListings
+});
 
 // Delete an object, then fix the caches
 api.listings.delete(17).then(function(res) {

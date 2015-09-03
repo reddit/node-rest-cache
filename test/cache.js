@@ -46,6 +46,10 @@ function formatResponse(object) {
   }
 }
 
+function unformatResponse(object) {
+  return object.objects;
+}
+
 function stub(){ 
   return Promise.resolve(0);
 }
@@ -186,8 +190,11 @@ describe('Cache', function() {
 
       cache.get(apiGET, [], {
         format: formatResponse
-      }).then(function() {
-        cache.getById('objects', 0, apiGET, [{ id: 0 }]).then(function(o) {
+      }).then(function(o) {
+        cache.getById('objects', 0, apiGET, [{ id: 0 }], {
+          format: formatResponse,
+          unformat: unformatResponse
+        }).then(function(o) {
           expect(o).to.equal(fakeData[0]);
           done();
         });
