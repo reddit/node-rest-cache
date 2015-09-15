@@ -1,4 +1,4 @@
-var crypto = require('crypto');
+var sha = require('sha1');
 var LRU = require('lru-cache');
 
 function Cache(config) {
@@ -286,9 +286,7 @@ Cache.prototype.getDataCacheConfig = function(type) {
 }
 
 Cache.generateHash = function(params) {
-  var shasum = crypto.createHash('sha1');
-  shasum.update(JSON.stringify(params) || '');
-  return shasum.digest('hex');
+  return sha(JSON.stringify(params) || '');
 };
 
 module.exports = Cache;
