@@ -1,6 +1,6 @@
 {
   "name": "restcache",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "An LRU-based caching solution for rest-like data fetching",
   "main": "index.js",
   "scripts": {
