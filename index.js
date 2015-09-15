@@ -10,6 +10,7 @@ function Cache(config) {
 
   this.requestCache = {};
   this.dataCache = {};
+  this.headCache = {};
 
   this.setUpDataCache();
 }
@@ -60,7 +61,7 @@ Cache.prototype.get = function(fn, params, options) {
       resolve(data);
 
       if (options.format) {
-        data = options.format(data);
+        data.body = options.format(data.body);
       }
 
       cache.setCaches(key, paramsHash, data, options);
@@ -96,7 +97,14 @@ Cache.prototype.loadFromCache = function(key, hash) {
   var requestCache = this.requestCache[key].get(hash);
   if(!requestCache) { return; }
 
-  var obj = {};
+  var headers = this.headCache[key].get(hash);
+  if(typeof headers === 'undefined') { return; }
+
+  var obj = {
+    body: {},
+    headers,
+  };
+
   var dataCache;
   var found = true;
   var id;
@@ -108,17 +116,17 @@ Cache.prototype.loadFromCache = function(key, hash) {
     id = this.getidProperty(type);
 
     if (requestCache[type].map) {
-      obj[type] = requestCache[type].map(function(id) {
+      obj.body[type] = requestCache[type].map(function(id) {
         var data = dataCache.get(id);
-        if (!data) {
+        if (typeof data === 'undefined') {
           found = false;
         }
 
         return data;
       });
     } else {
-      obj[type] = dataCache.get(id);
-      found = !!obj[type];
+      obj.body[type] = dataCache.get(id);
+      found = typeof obj.body[type] === 'undefined';
     }
 
     if (!found) { return; }
@@ -129,7 +137,7 @@ Cache.prototype.loadFromCache = function(key, hash) {
 
 Cache.prototype.setCaches = function(key, hash, data, options) {
   this.setRequestCache(key, hash, data, options);
-  this.setDataCache(data);
+  this.setDataCache(data.body);
 };
 
 Cache.prototype.setRequestCache = function(key, hash, data, options) {
@@ -142,19 +150,25 @@ Cache.prototype.setRequestCache = function(key, hash, data, options) {
     }
 
     this.requestCache[key] = this.requestCache[key] || new LRU(options.cache);
+    this.headCache[key] = this.headCache[key] || new LRU(options.cache);
   }
 
   var idCache = {};
 
-  for (var type in data) {
+  // explicitly null, instead of undefined; this allows us to check if the key
+  // exists
+  data.headers = data.headers || null;
+  this.headCache[key].set(hash, data.headers);
+
+  for (var type in data.body) {
     id = this.getidProperty(type);
 
-    if (data[type].map) {
-      idCache[type] = data[type].map(function(d) {
+    if (data.body[type].map) {
+      idCache[type] = data.body[type].map(function(d) {
         return d[id];
       });
     } else {
-      idCache[type] = data[type][id];
+      idCache[type] = data.body[type][id];
     }
   }
 
@@ -229,13 +243,16 @@ Cache.prototype.resetRequests = function(key, parameters, ids) {
 
   if (!key) {
     this.requestCache = {};
+    this.headCache = {};
     return;
   }
 
   var cache = this.requestCache[key];
+  var headCache = this.headCache[key];
 
   if (!parameters) {
     cache.reset();
+    headCache.reset();
     return;
   }
 
@@ -283,6 +300,20 @@ Cache.prototype.getDataCacheConfig = function(type) {
   }
 
   return this.defaultDataCacheConfig.cache;
+}
+
+Cache.prototype.head = function(key, params) {
+  var keyCache = this.headCache[key];
+  if(!keyCache) { return; }
+
+  var paramsHash = Cache.generateHash(params);
+
+  return keyCache.get(paramsHash);
+}
+
+Cache.prototype.body = function(key, params) {
+  var paramsHash = Cache.generateHash(params);
+  return this.loadFromCache(key, paramsHash).body;
 }
 
 Cache.generateHash = function(params) {

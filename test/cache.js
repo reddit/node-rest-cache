@@ -25,6 +25,10 @@ var fakeData = [
   { id: 1 }
 ];
 
+var headers = {
+  'content-type': 'application/json',
+};
+
 function apiGET (options) {
   if (options && options.id) {
     if (options.id < 10) {
@@ -36,7 +40,10 @@ function apiGET (options) {
     }
   }
 
-  return Promise.resolve(fakeData);
+  return Promise.resolve({
+    body: fakeData,
+    headers: headers,
+  });
 }
 
 function formatResponse(object) {
@@ -248,7 +255,7 @@ describe('Cache', function() {
       cache.resetRequests('apiGET', [], { objects: [1] });
 
       cache.get(apiGET, [], {}).then(function(data) {
-        expect(data.objects[0]).to.equal(fakeData[1]);
+        expect(data.body.objects[0]).to.equal(fakeData[1]);
         done();
       });
     });
@@ -287,6 +294,27 @@ describe('Cache', function() {
       cache.deleteData('objects', fakeData);
       expect(cache.dataCache.objects.get(0)).to.be.undefined;
       expect(cache.dataCache.objects.get(1)).to.be.undefined;
+    });
+  });
+
+  describe('header data', function() {
+    var cache;
+
+
+    beforeEach(function() {
+      cache = new Cache(config);
+
+      return cache.get(apiGET, [], {
+        format: formatResponse
+      })
+    });
+
+    it('can load header data', function() {
+      expect(cache.head(apiGET.name, [])).to.equal(headers);
+    });
+
+    it('can load body data', function() {
+      expect(cache.body(apiGET.name, []).objects).to.deep.equal(fakeData);
     });
   });
 });

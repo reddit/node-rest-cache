@@ -94,6 +94,15 @@ will update the ids to the passed-in list.
 
 If no arguments are provided, it will reset the entire request cache.
 
+## Caveats
+
+* API responses *must* return in the format `{ headers:{}, body:{} }`, and responses
+  from restcache will follow the same format. This allows HTTP headers to be
+  passed around. The contents of `headers` can be anything, and will be stored in
+  an LRU with the same configration as the request's LRU.
+* `body` must be formatted as `{ datatype: [data] }` to be stored in the caches
+  properly. Use the `format` option to set up your data properly.
+
 ## A Sample
 
 ```javascript
@@ -136,6 +145,21 @@ function formatListings(data) {
 
 function unFormatListings(data) {
   return data.listings;
+}
+
+function getData(url) {
+  return new Promise(function(resolve, reject) {
+    superagent
+      .get(url)
+      .then(function(err, res) {
+        if(err) { return reject(err); }
+
+        resolve({
+          headers: res.headers,
+          body: res.body
+        });
+      });
+  });
 }
 
 var apiParams = { subreddit: 'funny' };
