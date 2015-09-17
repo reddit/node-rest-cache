@@ -49,7 +49,7 @@ Cache.prototype.get = function(fn, params, options) {
 
     if (cachedData) {
       if (options.unformat) {
-        cachedData = options.unformat(cachedData);
+        cachedData.body = options.unformat(cachedData.body);
       }
 
       return Promise.resolve(cachedData);
@@ -58,13 +58,14 @@ Cache.prototype.get = function(fn, params, options) {
 
   return new Promise(function(resolve, reject) {
     fn.apply(undefined, params).then(function(data){
+      var cacheData = Object.assign({}, data);
       resolve(data);
 
       if (options.format) {
-        data.body = options.format(data.body);
+        cacheData.body = options.format(cacheData.body);
       }
 
-      cache.setCaches(key, paramsHash, data, options);
+      cache.setCaches(key, paramsHash, cacheData, options);
     }, function(error) {
       reject(error);
     });
@@ -98,6 +99,7 @@ Cache.prototype.loadFromCache = function(key, hash) {
   if(!requestCache) { return; }
 
   var headers = this.headCache[key].get(hash);
+
   if(typeof headers === 'undefined') { return; }
 
   var obj = {
