@@ -1,16 +1,23 @@
 var sha = require('sha1');
 var LRU = require('lru-cache');
 
+var defaultCacheConfig = {
+  max: 500,
+  dispose: function(cache) {
+    cache.reset();
+  },
+}
+
 function Cache(config) {
   var config = config || {};
 
-  this.defaultDataCacheConfig = config.defaultDataCacheConfig || {};
-  this.defaultRequestCacheConfig = config.defaultRequestCacheConfig || {};
+  this.defaultDataCacheConfig = config.defaultDataCacheConfig || defaultCacheConfig;
+  this.defaultRequestCacheConfig = config.defaultRequestCacheConfig || defaultCacheConfig;
   this.dataTypes = config.dataTypes || {};
 
-  this.requestCache = {};
   this.dataCache = {};
-  this.headCache = {};
+  this.requestCache = new LRU(this.defaultRequestCacheConfig);
+  this.headCache = new LRU(this.defaultRequestCacheConfig);
 
   this.setUpDataCache();
 }
@@ -93,12 +100,12 @@ Cache.prototype.getById = function(type, id, fn, params, options) {
 
 
 Cache.prototype.loadFromCache = function(key, hash) {
-  if (!this.requestCache[key]) { return; }
+  if (!this.requestCache.get(key)) { return; }
 
-  var requestCache = this.requestCache[key].get(hash);
+  var requestCache = this.requestCache.get(key).get(hash);
   if(!requestCache) { return; }
 
-  var headers = this.headCache[key].get(hash);
+  var headers = this.headCache.get(key).get(hash);
 
   if(typeof headers === 'undefined') { return; }
 
@@ -146,13 +153,13 @@ Cache.prototype.setRequestCache = function(key, hash, data, options) {
   var dataType;
   var id;
 
-  if (!this.requestCache[key]) {
+  if (!this.requestCache.get(key)) {
     if (!options.cache) {
       throw('No LRU configuration passed in for '+key+', aborting.');
     }
 
-    this.requestCache[key] = this.requestCache[key] || new LRU(options.cache);
-    this.headCache[key] = this.headCache[key] || new LRU(options.cache);
+    this.requestCache.set(key, new LRU(options.cache));
+    this.headCache.set(key, new LRU(options.cache));
   }
 
   var idCache = {};
@@ -160,7 +167,7 @@ Cache.prototype.setRequestCache = function(key, hash, data, options) {
   // explicitly null, instead of undefined; this allows us to check if the key
   // exists
   data.headers = data.headers || null;
-  this.headCache[key].set(hash, data.headers);
+  this.headCache.get(key).set(hash, data.headers);
 
   for (var type in data.body) {
     id = this.getidProperty(type);
@@ -174,7 +181,7 @@ Cache.prototype.setRequestCache = function(key, hash, data, options) {
     }
   }
 
-  this.requestCache[key].set(hash, idCache);
+  this.requestCache.get(key).set(hash, idCache);
 };
 
 Cache.prototype.setDataCache = function(data) {
@@ -244,13 +251,13 @@ Cache.prototype.resetRequests = function(key, parameters, ids) {
   }
 
   if (!key) {
-    this.requestCache = {};
-    this.headCache = {};
+    this.requestCache = new LRU(this.requestCacheConfig);
+    this.headCache = new LRU(this.requestCacheConfig);
     return;
   }
 
-  var cache = this.requestCache[key];
-  var headCache = this.headCache[key];
+  var cache = this.requestCache.get(key);
+  var headCache = this.headCache.get(key);
 
   if (!parameters) {
     cache.reset();
@@ -305,7 +312,7 @@ Cache.prototype.getDataCacheConfig = function(type) {
 }
 
 Cache.prototype.head = function(key, params) {
-  var keyCache = this.headCache[key];
+  var keyCache = this.headCache.get(key);
   if(!keyCache) { return; }
 
   var paramsHash = Cache.generateHash(params);

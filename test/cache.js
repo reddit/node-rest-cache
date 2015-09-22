@@ -85,7 +85,7 @@ describe('Cache', function() {
       cache.get(apiGET, [], {
         format: formatResponse
       }).then(function() {
-        expect(cache.requestCache.apiGET).to.not.be.undefined;
+        expect(cache.requestCache.get('apiGET')).to.not.be.undefined;
         done();
       }, function(e) {
         console.log(e.stack);
@@ -233,25 +233,25 @@ describe('Cache', function() {
     });
 
     it('clears the entire request cache', function() {
-      expect(cache.requestCache.apiGET).to.not.be.undefined;
+      expect(cache.requestCache.get('apiGET')).to.not.be.undefined;
       cache.resetRequests();
-      expect(cache.requestCache.apiGET).to.be.undefined;
+      expect(cache.requestCache.get('apiGET')).to.be.undefined;
     });
 
     it('clears the cache for a given key', function() {
-      expect(cache.requestCache.apiGET).to.not.be.undefined;
+      expect(cache.requestCache.get('apiGET')).to.not.be.undefined;
       cache.resetRequests('apiGET');
-      expect(cache.requestCache.apiGET.keys().length).to.equal(0);
+      expect(cache.requestCache.get('apiGET').keys().length).to.equal(0);
     });
 
     it('clears the cache for a given key/parameter set', function() {
-      expect(cache.requestCache.apiGET.get(Cache.generateHash([]))).to.not.be.undefined;
+      expect(cache.requestCache.get('apiGET').get(Cache.generateHash([]))).to.not.be.undefined;
       cache.resetRequests('apiGET', []);
-      expect(cache.requestCache.apiGET.get(Cache.generateHash([]))).to.be.undefined;
+      expect(cache.requestCache.get('apiGET').get(Cache.generateHash([]))).to.be.undefined;
     });
 
     it('updates the ids for a given key/parameter set', function(done) {
-      expect(cache.requestCache.apiGET).to.not.be.undefined;
+      expect(cache.requestCache.get('apiGET')).to.not.be.undefined;
       cache.resetRequests('apiGET', [], { objects: [1] });
 
       cache.get(apiGET, [], {}).then(function(data) {
