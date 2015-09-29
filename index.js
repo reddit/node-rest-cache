@@ -95,7 +95,13 @@ Cache.prototype.getById = function(type, id, fn, params, options) {
     }
   }
 
-  return this.get(fn, params, options);
+  var cache = this;
+
+  return new Promise(function(resolve, reject) {
+    cache.get(fn, params, options).then(function(d){
+      resolve(d.body)
+    }, reject);
+  });
 };
 
 
