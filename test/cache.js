@@ -46,6 +46,17 @@ function apiGET (options) {
   });
 }
 
+function apiGETOne (options) {
+  return new Promise(function(resolve, reject) {
+    apiGET(options).then(function(data) {
+      resolve({
+        body: data.body[0],
+        headers: data.headers
+      });
+    });
+  });
+}
+
 function formatResponse(object) {
   return {
     objects: object,
@@ -189,6 +200,30 @@ describe('Cache', function() {
       }, function(e) {
         console.log(e.stack);
       });
+    });
+
+    it('loads from a populated cache from an endpoint returning one object', function(done) {
+      var cache = new Cache(config);
+
+      var spy = sinon.spy(function(){
+        return apiGETOne.call(null, arguments);
+      })
+
+      cache.get(spy, [], {
+        format: formatResponse,
+      }).then(function(o) {
+        cache.get(spy, [], {
+          format: formatResponse,
+          unformat: unformatResponse
+        }).then(function(o) {
+          expect(spy).to.have.been.called.once;
+          expect(o.body).to.equal(fakeData[0]);
+          done();
+        });
+      }, function(e) {
+        console.log(e.stack);
+      });
+
     });
   });
 

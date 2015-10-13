@@ -140,8 +140,8 @@ Cache.prototype.loadFromCache = function(key, hash) {
         return data;
       });
     } else {
-      obj.body[type] = dataCache.get(id);
-      found = typeof obj.body[type] === 'undefined';
+      obj.body[type] = dataCache.get(requestCache[type]);
+      found = !!obj.body[type];
     }
 
     if (!found) { return; }
