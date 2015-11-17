@@ -29,8 +29,19 @@ Cache.prototype.setUpDataCache = function() {
 }
 
 Cache.prototype.get = function(fn, params, options) {
-  var cache = this;
   var options = options || this.defaultRequestCacheConfig || {};
+
+  if (options.rules) {
+    var failedRule = options.rules.some(function(rule) {
+      return !rule(params);
+    });
+
+    if (failedRule) {
+      return fn.apply(undefined, params);
+    }
+  }
+
+  var cache = this;
   var key = options.name || fn.name;
 
   if (!options.cache && this.defaultRequestCacheConfig.cache) {
@@ -43,24 +54,14 @@ Cache.prototype.get = function(fn, params, options) {
 
   var paramsHash = Cache.generateHash(params);
 
-  var failedRule = false;
+  var cachedData = this.loadFromCache(key, paramsHash);
 
-  if (options.rules) {
-    failedRule = options.rules.some(function(rule) {
-      return !rule(params);
-    });
-  }
-
-  if (!failedRule) {
-    var cachedData = this.loadFromCache(key, paramsHash);
-
-    if (cachedData) {
-      if (options.unformat) {
-        cachedData.body = options.unformat(cachedData.body);
-      }
-
-      return Promise.resolve(cachedData);
+  if (cachedData) {
+    if (options.unformat) {
+      cachedData.body = options.unformat(cachedData.body);
     }
+
+    return Promise.resolve(cachedData);
   }
 
   return new Promise(function(resolve, reject) {

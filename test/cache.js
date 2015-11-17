@@ -175,6 +175,8 @@ describe('Cache', function() {
       }).then(function() {
         //try {
         expect(Cache.prototype.loadFromCache).to.not.have.been.called.once;
+        expect(cache.dataCache.objects).to.be.undefined;
+
         stub.restore();
         done();
         //}catch(e){console.log(e)}
