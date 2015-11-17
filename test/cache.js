@@ -81,9 +81,9 @@ describe('Cache', function() {
     it('takes datatypes', function() {
       var dataTypes = {};
 
-      var cache = new Cache({
+      var cache = new Cache(Object.assign({
         dataTypes: dataTypes
-      });
+      }, config));
 
       expect(cache.dataTypes).to.equal(dataTypes);
     });
@@ -133,11 +133,7 @@ describe('Cache', function() {
     it('loads from cache on rule success', function(done) {
       var stub = sinon.stub(Cache.prototype, 'loadFromCache');
 
-      var cache = new Cache({
-        defaultRequestCacheConfig: {
-          cache: { max: 50 }
-        }
-      });
+      var cache = new Cache(config);
 
       cache.get(apiGET, [], {
         format: formatResponse,
@@ -157,15 +153,9 @@ describe('Cache', function() {
     });
 
     it('does not load from cache on rule failure', function(done) {
-      var defaultConfig = {
-        cache: { max: 50 }
-      };
-
       var stub = sinon.stub(Cache.prototype, 'loadFromCache');
 
-      var cache = new Cache({
-        config: defaultConfig,
-      });
+      var cache = new Cache(config);
 
       cache.get(apiGET, [], {
         format: formatResponse,
@@ -173,13 +163,11 @@ describe('Cache', function() {
           return false;
         }]
       }).then(function() {
-        //try {
         expect(Cache.prototype.loadFromCache).to.not.have.been.called.once;
         expect(cache.dataCache.objects).to.be.undefined;
 
         stub.restore();
         done();
-        //}catch(e){console.log(e)}
       }, function(e) {
         console.log(e.stack);
         stub.restore();

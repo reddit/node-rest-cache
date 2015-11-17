@@ -206,7 +206,7 @@ Cache.prototype.setDataCache = function(data) {
 
     if (Array.isArray(data[k])) {
       for (var o in data[k]) {
-        if (data[k][o].hasOwnProperty(id)) {
+        if (data[k][o].hasOwnProperty(id) && this.dataCache[k]) {
           this.dataCache[k].set(data[k][o][id], data[k][o]);
         }
       }
