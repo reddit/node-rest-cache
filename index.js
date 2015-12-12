@@ -33,6 +33,10 @@ Cache.prototype.setUpDataCache = function() {
 Cache.prototype.get = function(fn, params, options) {
   var options = options || this.defaultRequestCacheConfig || {};
 
+  if (!options || !options.key) {
+    return fn.apply(undefined, params);
+  }
+
   if (options.rules) {
     var failedRule = options.rules.some(function(rule) {
       return !rule(params);
@@ -48,10 +52,6 @@ Cache.prototype.get = function(fn, params, options) {
 
   if (!options.cache && this.defaultRequestCacheConfig.cache) {
     options.cache = this.defaultRequestCacheConfig.cache;
-  }
-
-  if (!key) {
-    return Promise.reject('No key was passed in, and function did not have a name.');
   }
 
   var paramsHash = Cache.generateHash(params);
