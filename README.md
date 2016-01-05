@@ -1,5 +1,7 @@
 # restcache
 A caching solution for data fetching. Reduces the number of API calls you have
+
+[![Build Status](https://travis-ci.org/reddit/restcache.svg)](https://travis-ci.org/reddit/restcache)
 to make.
 
 ## What it is
