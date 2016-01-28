@@ -1,7 +1,9 @@
-var sha = require('sha1');
-var LRU = require('lru-cache');
+const sha = require('sha1');
+const LRU = require('lru-cache');
+const stableJSONStringify = require('json-stable-stringify');
 
-var defaultCacheConfig = {
+
+const defaultCacheConfig = {
   max: 500,
   dispose: function(cache) {
     cache.reset();
@@ -333,7 +335,7 @@ Cache.prototype.body = function(key, params) {
 }
 
 Cache.generateHash = function(params) {
-  return sha(JSON.stringify(params) || '');
+  return sha(stableJSONStringify(params) || '');
 };
 
 module.exports = Cache;
