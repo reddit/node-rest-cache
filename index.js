@@ -268,6 +268,10 @@ Cache.prototype.resetRequests = function(key, parameters, ids) {
   var cache = this.requestCache.get(key);
   var headCache = this.headCache.get(key);
 
+  if (!cache || !headCache) {
+    return;
+  }
+
   if (!parameters) {
     cache.reset();
     headCache.reset();
