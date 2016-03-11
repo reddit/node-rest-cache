@@ -33,7 +33,7 @@ Cache.prototype.setUpDataCache = function() {
 Cache.prototype.get = function(fn, params, options) {
   var options = options || this.defaultRequestCacheConfig || {};
 
-  if (!options || !options.key) {
+  if (!options) {
     return fn.apply(undefined, params);
   }
 
@@ -49,6 +49,10 @@ Cache.prototype.get = function(fn, params, options) {
 
   var cache = this;
   var key = options.name || fn.name;
+
+  if (!key) {
+    return fn.apply(undefined, params);
+  }
 
   if (!options.cache && this.defaultRequestCacheConfig.cache) {
     options.cache = this.defaultRequestCacheConfig.cache;
